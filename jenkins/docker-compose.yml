@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins-mobile-test
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+volumes:
+  jenkins_home:
+    driver: local
