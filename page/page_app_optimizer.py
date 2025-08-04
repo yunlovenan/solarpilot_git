@@ -55,33 +55,34 @@ class APPOptimizerPage(BasePage):
     #     time.sleep(1)
     
     def click_app_add_optimizer(self):
-        """点击菜单到添加优化器入口"""
-        # 先等待页面加载完成
-        time.sleep(1)
-        #底部导航栏device
-        # 尝试多次查找Device元素
-        max_attempts = 3
-        for attempt in range(max_attempts):
-            try:
-                print(f"🔍 第{attempt + 1}次尝试查找Device元素...")
-                if self.is_element_exist(plantinfo.Device):
-                    print("✅ 找到Device元素，准备点击")
-                    self.click_element(plantinfo.Device, 'Device')
-                    break
-                else:
-                    print(f"❌ 第{attempt + 1}次未找到Device元素，等待后重试...")
-                    time.sleep(2)
-            except Exception as e:
-                print(f"❌ 第{attempt + 1}次查找Device元素失败: {e}")
-                if attempt < max_attempts - 1:
-                    time.sleep(2)
-                else:
-                    raise e
+        """点击添加设备按钮"""
         time.sleep(1)
         #self.click_element(plantinfo.Device, 'Device')
-        #点击添加设备
-        self.click_element(plantinfo.add_device, '添加设备+')
-        time.sleep(1)    
+        #点击添加设备 - 使用多种定位策略
+        try:
+            # 首先尝试主要定位器
+            self.click_element(plantinfo.add_device, '添加设备+')
+        except Exception as e:
+            print(f"⚠️ 主要定位器失败: {e}")
+            try:
+                # 尝试备用定位器1
+                self.click_element(plantinfo.add_device_alt1, '添加设备+(备用1)')
+            except Exception as e:
+                print(f"⚠️ 备用定位器1失败: {e}")
+                try:
+                    # 尝试备用定位器2
+                    self.click_element(plantinfo.add_device_alt2, '添加设备+(备用2)')
+                except Exception as e:
+                    print(f"⚠️ 备用定位器2失败: {e}")
+                    try:
+                        # 尝试备用定位器3
+                        self.click_element(plantinfo.add_device_alt3, '添加设备+(备用3)')
+                    except Exception as e:
+                        print(f"❌ 所有定位器都失败: {e}")
+                        # 如果所有定位器都失败，尝试使用坐标点击
+                        print("🔄 尝试使用坐标点击...")
+                        self.driver.tap([(697, 980)], 100)
+        time.sleep(1)
        
         
     

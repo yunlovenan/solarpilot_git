@@ -47,8 +47,13 @@ class AddOptimizersLocator:
     """添加优化器页面的元素定位"""  
     #添加优化器入口
     Optimizers = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Optimizers")')
-    #确认添加
+    #确认添加 - 使用多种定位策略
     confirm_add = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Confirm")')
+    # 备用定位器
+    confirm_add_alt1 = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().text("Confirm")')
+    confirm_add_alt2 = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().className("android.widget.Button").description("Confirm")')
+    confirm_add_alt3 = (AppiumBy.XPATH, "//android.widget.Button[contains(@content-desc, 'Confirm')]")
+    confirm_add_alt4 = (AppiumBy.CLASS_NAME, "android.widget.Button")
     #got it
     got_it = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Got It")')
     
@@ -160,7 +165,10 @@ class PlantinfoLocatorr:
     #底部导航-BasicInfo
     BasicInfo = (AppiumBy.XPATH, "//android.view.View[contains(@content-desc, 'Basic Info')]")
     
-    #添加设备+
-    add_device = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().className("android.view.View").instance(17)')
-    
+    #添加设备+ - 使用多种定位策略
+    add_device = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Add Device")')
+    # 备用定位器
+    add_device_alt1 = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().text("Add Device")')
+    add_device_alt2 = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().className("android.view.View").description("Add Device")')
+    add_device_alt3 = (AppiumBy.XPATH, "//android.view.View[contains(@content-desc, 'Add Device')]")
  
