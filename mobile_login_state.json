@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-07-28T15:32:21.887850",
+  "platform": "Android",
+  "app_package": "com.eiot6.solartest",
+  "app_activity": "com.eiot6.solartest/.MainActivity",
+  "device_name": "emulator-5554",
+  "login_status": "success",
+  "session_data": {
+    "device_id": "emulator-5554",
+    "app_state": "unknown",
+    "current_activity": ".MainActivity"
+  }
+}
