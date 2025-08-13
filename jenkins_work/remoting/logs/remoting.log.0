@@ -1,0 +1,10 @@
+8月 13, 2025 5:14:34 下午 hudson.remoting.Launcher createEngine
+信息: Setting up agent: appium-node
+8月 13, 2025 5:14:34 下午 hudson.remoting.Engine startEngine
+信息: Using Remoting version: 3309.v27b_9314fd1a_4
+8月 13, 2025 5:14:34 下午 org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+信息: Using ./jenkins_work/remoting as a remoting work directory
+8月 13, 2025 5:14:34 下午 hudson.remoting.Launcher$CuiListener status
+信息: WebSocket connection open
+8月 13, 2025 5:14:34 下午 hudson.remoting.Launcher$CuiListener status
+信息: Connected
