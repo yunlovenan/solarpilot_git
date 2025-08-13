@@ -19,40 +19,65 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Logs
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Appium
 *.log
-logs/
-
-# Test Results
-result/
 allure_report/
-test_reports/
+result/
+downloads/
+screenshots/
+
+# Jenkins
+jenkins/logs/
+jenkins/workspace/
+
+# Docker
+.dockerignore
+
+# Mobile
+*.apk
+*.ipa
+*.aab
 
 # Temporary files
 *.tmp
 *.temp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Appium
-node_modules/
-
-# Mobile app state
 mobile_login_state.json
 
-# Jenkins logs
-jenkins/logs/
+# Configuration (uncomment if you want to ignore config files)
+# conf/*.ini
+# conf/*.json

@@ -181,7 +181,7 @@ def run_tests(test_type='web', generate_report=True):
         # 强制运行移动端测试
         os.environ['FORCE_TEST_TYPE'] = 'mobile'
         print(f"环境变量 FORCE_TEST_TYPE 设置为: {os.environ.get('FORCE_TEST_TYPE')}")
-        pytest.main(['-s', '-v', '--alluredir=allure_report', 'testcase/test_app_03_optimizeradd.py::TestAPPOptimizer'])
+        pytest.main(['-s', '-v', '--alluredir=allure_report', 'testcase/test_app_01_login.py::TestAppLogin'])
     elif test_type == 'web':
         # 强制运行Web测试
         os.environ['FORCE_TEST_TYPE'] = 'web'
