@@ -75,8 +75,9 @@ pipeline {
                         fi
                         
                         # 启动Appium服务器
+                        echo "启动Appium服务器..."
                         appium --base-path /wd/hub --log-level debug > appium.log 2>&1 &
-                        local appium_pid=$!
+                        appium_pid=$!
                         
                         # 等待启动
                         echo "等待Appium服务器启动..."
@@ -104,11 +105,13 @@ pipeline {
                     if [ -d "$PROJECT_ROOT/venv" ]; then
                         echo "✅ 虚拟环境已存在: $PROJECT_ROOT/venv"
                         source "$PROJECT_ROOT/venv/bin/activate"
+                        echo "虚拟环境已激活: $VIRTUAL_ENV"
                     else
                         echo "📝 创建虚拟环境..."
                         cd "$PROJECT_ROOT"
                         python3 -m venv venv
                         source venv/bin/activate
+                        echo "虚拟环境已创建并激活: $VIRTUAL_ENV"
                         cd -
                     fi
                     
@@ -127,6 +130,7 @@ pipeline {
                 sh '''
                     # 激活虚拟环境
                     source "$PROJECT_ROOT/venv/bin/activate"
+                    echo "虚拟环境已激活: $VIRTUAL_ENV"
                     
                     echo "升级pip..."
                     python3 -m pip install --upgrade pip
@@ -172,6 +176,7 @@ pipeline {
                 sh '''
                     # 激活虚拟环境
                     source "$PROJECT_ROOT/venv/bin/activate"
+                    echo "虚拟环境已激活: $VIRTUAL_ENV"
                     
                     echo "=== 运行测试 ==="
                     echo "清理之前的测试结果..."
@@ -203,6 +208,7 @@ pipeline {
                 sh '''
                     # 激活虚拟环境
                     source "$PROJECT_ROOT/venv/bin/activate"
+                    echo "虚拟环境已激活: $VIRTUAL_ENV"
                     
                     echo "=== 生成报告 ==="
                     
@@ -252,12 +258,6 @@ pipeline {
             echo '🧹 清理环境...'
             sh '''
                 echo "=== 清理环境 ==="
-                
-                # 退出虚拟环境
-                if [ -n "$VIRTUAL_ENV" ]; then
-                    deactivate
-                    echo "已退出虚拟环境"
-                fi
                 
                 # 显示最终状态
                 echo "模拟器状态:"
