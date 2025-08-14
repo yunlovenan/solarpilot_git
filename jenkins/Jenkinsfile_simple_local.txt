@@ -1,0 +1,235 @@
+pipeline {
+    agent {
+        label 'appium-node'
+    }
+    
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+    
+    environment {
+        EMULATOR_NAME = 'emulator-5554'
+        ANDROID_VERSION = '13'
+        APPIUM_URL = 'http://localhost:4723/wd/hub'
+    }
+    
+    stages {
+        stage('Setup Environment') {
+            steps {
+                echo '🔧 设置环境...'
+                sh '''
+                    echo "=== 环境信息 ==="
+                    echo "节点名称: $NODE_NAME"
+                    echo "工作目录: $(pwd)"
+                    echo "模拟器: $EMULATOR_NAME"
+                    echo "Android版本: $ANDROID_VERSION"
+                    echo "Appium URL: $APPIUM_URL"
+                    
+                    # 创建必要的目录
+                    mkdir -p result/logs
+                    mkdir -p result/screenshots
+                    mkdir -p result/reports
+                    mkdir -p ALLURE-RESULTS
+                    mkdir -p allure_report
+                    
+                    # 设置权限
+                    chmod -R 755 result/
+                    chmod -R 755 ALLURE-RESULTS/
+                    
+                    echo "目录创建完成"
+                '''
+            }
+        }
+        
+        stage('Check Dependencies') {
+            steps {
+                echo '🔍 检查依赖...'
+                sh '''
+                    echo "=== 依赖检查 ==="
+                    
+                    # 显示Python版本
+                    python3 --version
+                    
+                    # 检查模拟器
+                    echo "模拟器状态:"
+                    adb devices
+                    
+                    # 检查Appium
+                    echo "Appium状态:"
+                    if curl -s "$APPIUM_URL/status" > /dev/null; then
+                        echo "✅ Appium服务器运行正常"
+                    else
+                        echo "❌ Appium服务器未运行"
+                        exit 1
+                    fi
+                    
+                    # 检查虚拟环境
+                    if [ -d "venv" ]; then
+                        echo "✅ 虚拟环境已存在"
+                        source venv/bin/activate
+                    else
+                        echo "📝 创建虚拟环境..."
+                        python3 -m venv venv
+                        source venv/bin/activate
+                    fi
+                    
+                    # 检查核心包
+                    echo "检查Python包..."
+                    python3 -c "import pytest; print('✅ pytest已安装')" 2>/dev/null || echo "❌ pytest未安装"
+                    python3 -c "import selenium; print('✅ selenium已安装')" 2>/dev/null || echo "❌ selenium未安装"
+                    python3 -c "import appium; print('✅ appium已安装')" 2>/dev/null || echo "❌ appium未安装"
+                '''
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                echo '📦 安装依赖...'
+                sh '''
+                    source venv/bin/activate
+                    
+                    echo "升级pip..."
+                    python3 -m pip install --upgrade pip
+                    
+                    echo "安装依赖包..."
+                    
+                    # 尝试使用阿里云镜像
+                    if pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/; then
+                        echo "✅ 使用阿里云镜像安装成功"
+                    else
+                        echo "⚠️ 阿里云镜像失败，尝试清华镜像..."
+                        
+                        if pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/; then
+                            echo "✅ 使用清华镜像安装成功"
+                        else
+                            echo "⚠️ 镜像安装失败，直接安装核心包..."
+                            
+                            pip install pytest==8.4.1
+                            pip install selenium
+                            pip install appium-python-client
+                            pip install requests
+                            pip install allure-pytest
+                            
+                            echo "✅ 核心包安装完成"
+                        fi
+                    fi
+                    
+                    echo "已安装的包:"
+                    pip list | grep -E "(pytest|selenium|appium|requests|allure)"
+                '''
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                echo '🧪 运行测试...'
+                sh '''
+                    source venv/bin/activate
+                    
+                    echo "=== 运行测试 ==="
+                    echo "清理之前的测试结果..."
+                    rm -f junit.xml
+                    rm -rf ALLURE-RESULTS/*
+                    
+                    echo "开始执行测试..."
+                    echo "测试命令: pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml"
+                    
+                    if pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml; then
+                        echo "✅ 测试执行成功"
+                    else
+                        echo "❌ 测试执行失败"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+        
+        stage('Generate Report') {
+            steps {
+                echo '📊 生成报告...'
+                sh '''
+                    source venv/bin/activate
+                    
+                    echo "=== 生成报告 ==="
+                    
+                    # 检查Allure结果
+                    if [ -d "ALLURE-RESULTS" ] && [ "$(ls -A ALLURE-RESULTS)" ]; then
+                        echo "✅ 找到测试结果"
+                        
+                        if command -v allure &> /dev/null; then
+                            echo "生成Allure HTML报告..."
+                            if allure generate ALLURE-RESULTS --clean -o allure_report; then
+                                echo "✅ Allure报告生成成功"
+                                echo "报告路径: $(pwd)/allure_report/"
+                            else
+                                echo "❌ Allure报告生成失败"
+                            fi
+                        else
+                            echo "⚠️ allure命令不可用，跳过报告生成"
+                        fi
+                    else
+                        echo "⚠️ 没有找到测试结果"
+                    fi
+                    
+                    # 检查JUnit XML
+                    if [ -f "junit.xml" ]; then
+                        echo "✅ JUnit XML报告已生成"
+                        echo "JUnit报告: $(pwd)/junit.xml"
+                    fi
+                    
+                    # 显示最终结果
+                    echo "=== 最终结果 ==="
+                    ls -la ALLURE-RESULTS/ 2>/dev/null || echo "ALLURE-RESULTS目录为空"
+                    ls -la allure_report/ 2>/dev/null || echo "allure_report目录为空"
+                    ls -la junit.xml 2>/dev/null || echo "junit.xml不存在"
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '🧹 清理环境...'
+            sh '''
+                echo "=== 清理环境 ==="
+                
+                # 退出虚拟环境
+                if [ -n "$VIRTUAL_ENV" ]; then
+                    deactivate
+                    echo "已退出虚拟环境"
+                fi
+                
+                # 显示最终状态
+                echo "模拟器状态:"
+                adb devices
+                
+                echo "Appium状态:"
+                if curl -s "$APPIUM_URL/status" > /dev/null; then
+                    echo "✅ Appium服务器运行正常"
+                else
+                    echo "❌ Appium服务器未运行"
+                fi
+                
+                echo "清理完成"
+            '''
+        }
+        success {
+            echo '🎉 构建成功！'
+            sh '''
+                echo "=== 构建成功信息 ==="
+                echo "模拟器: $EMULATOR_NAME"
+                echo "Android版本: $ANDROID_VERSION"
+                echo "测试完成时间: $(date)"
+            '''
+        }
+        failure {
+            echo '❌ 构建失败！'
+            sh '''
+                echo "=== 构建失败信息 ==="
+                echo "失败时间: $(date)"
+                echo "最后错误: $?"
+            '''
+        }
+    }
+}

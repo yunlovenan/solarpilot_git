@@ -1,0 +1,279 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Appium移动端自动化测试项目 - 使用本地Pixel 7 Pro模拟器</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.disk__usage.DiskUsageProperty/>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>EMULATOR_NAME</name>
+          <description>模拟器名称</description>
+          <defaultValue>emulator-5554</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ANDROID_VERSION</name>
+          <description>Android版本</description>
+          <defaultValue>13</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TYPE</name>
+          <description>测试类型</description>
+          <defaultValue>mobile</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>GENERATE_REPORT</name>
+          <description>是否生成测试报告</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.15.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/yunlovenan/solarpilot_git.git</url>
+        <credentialsId>github-token</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/main</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.GitSCMFileSystemExclusion>
+        <excludedPaths>jenkins_work/</excludedPaths>
+      </hudson.plugins.git.extensions.impl.GitSCMFileSystemExclusion>
+      <hudson.plugins.git.extensions.impl.CloneOption>
+        <shallow>false</shallow>
+        <noTags>false</noTags>
+        <reference/>
+        <depth>0</depth>
+        <honorRefspec>false</honorRefspec>
+        <singleBranch>false</singleBranch>
+        <timeout>1800</timeout>
+      </hudson.plugins.git.extensions.impl.CloneOption>
+      <hudson.plugins.git.extensions.impl.SubmoduleOption>
+        <disableSubmodules>false</disableSubmodules>
+        <recursiveSubmodules>true</recursiveSubmodules>
+        <trackingSubmodules>false</trackingSubmodules>
+        <reference/>
+        <parentCredentials>false</parentCredentials>
+        <submoduleCfg class="empty-list"/>
+        <shallow>false</shallow>
+        <depth>0</depth>
+        <timeout>1800</timeout>
+      </hudson.plugins.git.extensions.impl.SubmoduleOption>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>0 15 * * *</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+echo "🚀 Jenkins Appium项目构建开始"
+echo "================================"
+echo "构建时间: $(date)"
+echo "构建编号: $BUILD_NUMBER"
+echo "工作目录: $(pwd)"
+echo ""
+
+# 设置环境变量
+export EMULATOR_NAME="${EMULATOR_NAME:-emulator-5554}"
+export ANDROID_VERSION="${ANDROID_VERSION:-13}"
+export TEST_TYPE="${TEST_TYPE:-mobile}"
+export GENERATE_REPORT="${GENERATE_REPORT:-true}"
+
+echo "📱 测试环境配置:"
+echo "   模拟器名称: $EMULATOR_NAME"
+echo "   Android版本: $ANDROID_VERSION"
+echo "   测试类型: $TEST_TYPE"
+echo "   生成报告: $GENERATE_REPORT"
+echo ""
+
+# 检查模拟器状态
+echo "🔍 检查模拟器状态..."
+if adb devices | grep -q "$EMULATOR_NAME"; then
+    echo "✅ 模拟器 $EMULATOR_NAME 已连接"
+    
+    # 获取模拟器信息
+    local version=$(adb -s $EMULATOR_NAME shell getprop ro.build.version.release)
+    local model=$(adb -s $EMULATOR_NAME shell getprop ro.product.model)
+    echo "   Android版本: $version"
+    echo "   设备型号: $model"
+else
+    echo "❌ 模拟器 $EMULATOR_NAME 未连接"
+    echo "请确保模拟器已启动并连接"
+    exit 1
+fi
+
+# 启动Appium服务器
+echo ""
+echo "🚀 启动Appium服务器..."
+if curl -s http://localhost:4723/status > /dev/null 2>&1; then
+    echo "✅ Appium服务器已在运行"
+else
+    echo "正在启动Appium服务器..."
+    appium --base-path /wd/hub --log-level debug > appium.log 2>&1 &
+    local appium_pid=$!
+    
+    # 等待启动
+    for i in {1..30}; do
+        if curl -s http://localhost:4723/status > /dev/null 2>&1; then
+            echo "✅ Appium服务器启动成功 (PID: $appium_pid)"
+            break
+        fi
+        sleep 2
+        echo "   等待Appium启动... ($i/30)"
+    done
+    
+    if ! curl -s http://localhost:4723/status > /dev/null 2>&1; then
+        echo "❌ Appium服务器启动失败"
+        exit 1
+    fi
+fi
+
+# 检查Python包
+echo ""
+echo "🔍 检查Python包..."
+local packages=("pytest" "selenium" "appium" "requests")
+local all_installed=true
+
+for package in "${packages[@]}"; do
+    if python3 -c "import $package" 2>/dev/null; then
+        echo "✅ $package 已安装"
+    else
+        echo "❌ $package 未安装"
+        all_installed=false
+    fi
+done
+
+if ! $all_installed; then
+    echo "❌ 必要的Python包未安装，构建失败"
+    exit 1
+fi
+
+# 清理之前的测试结果
+echo ""
+echo "🧹 清理之前的测试结果..."
+rm -rf ALLURE-RESULTS/ allure_report/ junit.xml
+mkdir -p ALLURE-RESULTS/
+
+# 运行测试
+echo ""
+echo "🧪 运行Appium测试..."
+if [ -f "run.py" ]; then
+    echo "✅ 找到run.py文件，开始运行测试..."
+    if python3 run.py $TEST_TYPE; then
+        echo "✅ 测试执行成功"
+    else
+        echo "❌ 测试执行失败"
+        exit 1
+    fi
+else
+    echo "❌ run.py文件不存在"
+    exit 1
+fi
+
+# 生成报告
+if [ "$GENERATE_REPORT" = "true" ]; then
+    echo ""
+    echo "📊 生成测试报告..."
+    
+    if [ -d "ALLURE-RESULTS" ]; then
+        echo "✅ 找到测试结果目录"
+        
+        if command -v allure &> /dev/null; then
+            echo "生成Allure HTML报告..."
+            if allure generate ALLURE-RESULTS/ --clean -o allure_report/; then
+                echo "✅ Allure报告生成成功"
+                echo "报告路径: $(pwd)/allure_report/"
+            else
+                echo "❌ Allure报告生成失败"
+            fi
+        else
+            echo "⚠️ allure命令不可用，跳过报告生成"
+        fi
+    else
+        echo "⚠️ 没有找到测试结果目录"
+    fi
+    
+    # 检查JUnit XML
+    if [ -f "junit.xml" ]; then
+        echo "✅ JUnit XML报告已生成"
+    fi
+fi
+
+echo ""
+echo "🎉 构建完成！"
+echo "构建时间: $(date)"
+echo "构建状态: 成功"</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.allure.jenkins.AllureReportPublisher plugin="allure-jenkins-plugin@2.15.0">
+      <configPath>allure_report</configPath>
+      <buildPolicy>ALWAYS</buildPolicy>
+      <includedProperties>EMULATOR_NAME,ANDROID_VERSION,TEST_TYPE</includedProperties>
+      <excludedProperties/>
+      <failOnMissing>false</failOnMissing>
+      <keepResults>true</keepResults>
+    </hudson.plugins.allure.jenkins.AllureReportPublisher>
+    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.58">
+      <testResults>junit.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <healthScaleFactor>1.0</healthScaleFactor>
+      <allowEmptyResults>false</allowEmptyResults>
+    </hudson.tasks.junit.JUnitResultArchiver>
+    <hudson.plugins.parameterizedtrigger.ParameterizedTriggerPublisher plugin="parameterized-trigger@2.45">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.TriggerConfig>
+              <configs class="empty-list"/>
+            </hudson.plugins.parameterizedtrigger.TriggerConfig>
+          </configs>
+          <projects/>
+          <condition>ALWAYS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <blockAll>false</blockAll>
+          <blockingJobs/>
+          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+          <buildAllNodesWithLabelSet>false</buildAllNodesWithLabelSet>
+          <allowTriggeringUnstableJobs>false</allowTriggeringUnstableJobs>
+          <unstableAsBlocked>false</unstableAsBlocked>
+          <blockQueue>false</blockQueue>
+          <ignoreUnstableCode>false</ignoreUnstableCode>
+          <buildStepFailureThreshold>0</buildStepFailureThreshold>
+          <failureThreshold>0</failureThreshold>
+          <unstableThreshold>0</unstableThreshold>
+          <successThreshold>0</successThreshold>
+          <parameterFactories/>
+        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.ParameterizedTriggerPublisher>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.20"/>
+    <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@1.0.2">
+      <colorMapName>xterm</colorMapName>
+    </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
+  </buildWrappers>
+</project>
