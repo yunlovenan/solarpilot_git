@@ -76,15 +76,28 @@ fi
 # 创建目录
 mkdir -p result/logs result/screenshots result/reports
 
-# 运行测试（不使用Allure）
+# 运行测试（生成Allure结果和JUnit报告）
 echo "运行测试..."
-pytest testcase/test_app_01_login.py -v --junitxml=junit.xml --tb=short
-
+pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml --tb=short
 # 检查测试结果
 if [ $? -eq 0 ]; then
     echo "✅ 测试执行成功"
 else
     echo "⚠️ 测试执行有错误，但继续生成报告"
+fi
+
+# 生成Allure报告
+echo "生成Allure报告..."
+if [ -d "ALLURE-RESULTS" ] && [ "$(ls -A ALLURE-RESULTS)" ]; then
+    if command -v allure &> /dev/null; then
+        allure generate ALLURE-RESULTS --clean -o allure_report
+        echo "✅ Allure报告已生成到 allure_report/ 目录"
+    else
+        echo "⚠️ allure命令不可用，跳过Allure报告生成"
+        echo "Allure结果已保存到 ALLURE-RESULTS/ 目录"
+    fi
+else
+    echo "⚠️ 没有找到Allure测试结果"
 fi
 
 # 生成简单报告

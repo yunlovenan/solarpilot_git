@@ -101,7 +101,8 @@ pip install pytest==8.4.1 selenium appium-python-client requests allure-pytest -
 
 # 运行测试（不使用Allure避免兼容性问题）
 echo "运行测试..."
-pytest testcase/test_app_01_login.py -v --junitxml=junit.xml
+#pytest testcase/test_app_01_login.py -v --junitxml=junit.xml
+pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml
 
 # 生成简单报告（避免Allure兼容性问题）
 echo "生成测试报告..."
