@@ -3,7 +3,6 @@ from data.case_data import LoginCase
 from common.handle_logging import log
 from page.page_app_login import APPLoginPage
 from page.page_app_index import APPIndexPage
-from selenium import webdriver
 import allure
 import os
 from common.handle_path import DATA_DIR

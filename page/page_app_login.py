@@ -13,11 +13,8 @@ os.environ.pop('HTTPS_PROXY', None)
 os.environ.pop('all_proxy', None)
 os.environ.pop('ALL_PROXY', None)
 
-# 添加本地appium模块路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'appium_local'))
-
 try:
-    from webdriver import Remote
+    from appium import webdriver
     from appium.options.android import UiAutomator2Options
     from appium.webdriver.common.appiumby import AppiumBy
     from selenium.webdriver.support.ui import WebDriverWait
@@ -58,7 +55,7 @@ class APPLoginPage(BasePage):
         """初始化Appium驱动"""
         try:
             print("正在连接Appium服务器...")
-            self.driver = Remote('http://localhost:4723', options=self.options)
+            self.driver = webdriver.Remote('http://localhost:4723/wd/hub', options=self.options)
             self.wait = WebDriverWait(self.driver, 10)
             print("✅ Appium驱动初始化成功")
             return True
