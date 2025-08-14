@@ -12,6 +12,7 @@ pipeline {
         EMULATOR_NAME = 'emulator-5554'
         ANDROID_VERSION = '13'
         APPIUM_URL = 'http://localhost:4723/wd/hub'
+        PROJECT_ROOT = '/Users/mayun/project/solarpilot/Appium_Solat'
     }
     
     stages {
@@ -25,6 +26,7 @@ pipeline {
                     echo "模拟器: $EMULATOR_NAME"
                     echo "Android版本: $ANDROID_VERSION"
                     echo "Appium URL: $APPIUM_URL"
+                    echo "项目根目录: $PROJECT_ROOT"
                     
                     # 创建必要的目录
                     mkdir -p result/logs
@@ -55,23 +57,59 @@ pipeline {
                     echo "模拟器状态:"
                     adb devices
                     
-                    # 检查Appium
+                    # 检查并启动Appium服务器
                     echo "Appium状态:"
                     if curl -s "$APPIUM_URL/status" > /dev/null; then
                         echo "✅ Appium服务器运行正常"
                     else
-                        echo "❌ Appium服务器未运行"
-                        exit 1
+                        echo "⚠️ Appium服务器未运行，正在启动..."
+                        
+                        # 切换到项目根目录启动Appium
+                        cd "$PROJECT_ROOT"
+                        
+                        # 检查是否已有Appium进程
+                        if pgrep -f "appium.*--base-path" > /dev/null; then
+                            echo "✅ 发现已有Appium进程，正在停止..."
+                            pkill -f "appium.*--base-path"
+                            sleep 2
+                        fi
+                        
+                        # 启动Appium服务器
+                        appium --base-path /wd/hub --log-level debug > appium.log 2>&1 &
+                        local appium_pid=$!
+                        
+                        # 等待启动
+                        echo "等待Appium服务器启动..."
+                        for i in {1..30}; do
+                            if curl -s "$APPIUM_URL/status" > /dev/null; then
+                                echo "✅ Appium服务器启动成功 (PID: $appium_pid)"
+                                break
+                            fi
+                            sleep 2
+                            echo "   等待Appium启动... ($i/30)"
+                        done
+                        
+                        if ! curl -s "$APPIUM_URL/status" > /dev/null; then
+                            echo "❌ Appium服务器启动失败"
+                            echo "Appium日志:"
+                            tail -20 appium.log
+                            exit 1
+                        fi
+                        
+                        # 返回工作目录
+                        cd -
                     fi
                     
                     # 检查虚拟环境
-                    if [ -d "venv" ]; then
-                        echo "✅ 虚拟环境已存在"
-                        source venv/bin/activate
+                    if [ -d "$PROJECT_ROOT/venv" ]; then
+                        echo "✅ 虚拟环境已存在: $PROJECT_ROOT/venv"
+                        source "$PROJECT_ROOT/venv/bin/activate"
                     else
                         echo "📝 创建虚拟环境..."
+                        cd "$PROJECT_ROOT"
                         python3 -m venv venv
                         source venv/bin/activate
+                        cd -
                     fi
                     
                     # 检查核心包
@@ -87,12 +125,16 @@ pipeline {
             steps {
                 echo '📦 安装依赖...'
                 sh '''
-                    source venv/bin/activate
+                    # 激活虚拟环境
+                    source "$PROJECT_ROOT/venv/bin/activate"
                     
                     echo "升级pip..."
                     python3 -m pip install --upgrade pip
                     
                     echo "安装依赖包..."
+                    
+                    # 切换到项目根目录
+                    cd "$PROJECT_ROOT"
                     
                     # 尝试使用阿里云镜像
                     if pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/; then
@@ -117,6 +159,9 @@ pipeline {
                     
                     echo "已安装的包:"
                     pip list | grep -E "(pytest|selenium|appium|requests|allure)"
+                    
+                    # 返回工作目录
+                    cd -
                 '''
             }
         }
@@ -125,7 +170,8 @@ pipeline {
             steps {
                 echo '🧪 运行测试...'
                 sh '''
-                    source venv/bin/activate
+                    # 激活虚拟环境
+                    source "$PROJECT_ROOT/venv/bin/activate"
                     
                     echo "=== 运行测试 ==="
                     echo "清理之前的测试结果..."
@@ -133,14 +179,20 @@ pipeline {
                     rm -rf ALLURE-RESULTS/*
                     
                     echo "开始执行测试..."
-                    echo "测试命令: pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml"
+                    echo "测试命令: pytest testcase/test_simple_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml"
                     
-                    if pytest testcase/test_app_01_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml; then
+                    # 切换到项目根目录运行测试
+                    cd "$PROJECT_ROOT"
+                    
+                    if pytest testcase/test_simple_login.py -v --alluredir=ALLURE-RESULTS --junitxml=junit.xml; then
                         echo "✅ 测试执行成功"
                     else
                         echo "❌ 测试执行失败"
                         exit 1
                     fi
+                    
+                    # 返回工作目录
+                    cd -
                 '''
             }
         }
@@ -149,9 +201,13 @@ pipeline {
             steps {
                 echo '📊 生成报告...'
                 sh '''
-                    source venv/bin/activate
+                    # 激活虚拟环境
+                    source "$PROJECT_ROOT/venv/bin/activate"
                     
                     echo "=== 生成报告 ==="
+                    
+                    # 切换到项目根目录
+                    cd "$PROJECT_ROOT"
                     
                     # 检查Allure结果
                     if [ -d "ALLURE-RESULTS" ] && [ "$(ls -A ALLURE-RESULTS)" ]; then
@@ -183,6 +239,9 @@ pipeline {
                     ls -la ALLURE-RESULTS/ 2>/dev/null || echo "ALLURE-RESULTS目录为空"
                     ls -la allure_report/ 2>/dev/null || echo "allure_report目录为空"
                     ls -la junit.xml 2>/dev/null || echo "junit.xml不存在"
+                    
+                    # 返回工作目录
+                    cd -
                 '''
             }
         }
