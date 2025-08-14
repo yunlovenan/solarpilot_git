@@ -143,7 +143,7 @@ def driver():
             options.app_activity = "com.eiot6.solartest/.MainActivity"
             options.no_reset = True  # 保持应用状态，使用缓存的登录状态
             
-            mobile_driver = webdriver.Remote('http://localhost:4723', options=options)
+            mobile_driver = webdriver.Remote('http://localhost:4723/wd/hub', options=options)
             print("✅ 移动端驱动初始化成功")
             print("📱 应用将保持登录状态，使用缓存的cookies登录")
             

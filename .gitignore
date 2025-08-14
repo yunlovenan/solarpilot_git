@@ -81,3 +81,21 @@ mobile_login_state.json
 # Configuration (uncomment if you want to ignore config files)
 # conf/*.ini
 # conf/*.json
+
+# Logs
+*.log
+logs/
+
+# Test results
+ALLURE-RESULTS/
+allure_report/
+junit.xml
+result/
+
+# Jenkins
+jenkins_work/
+jenkins_work/
+
+# Appium
+appium.log
+appium_test.log
