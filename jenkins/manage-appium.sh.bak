@@ -55,38 +55,19 @@ check_appium_installed() {
 # 检查Appium状态
 check_status() {
     if curl -s "$APPIUM_URL/status" > /dev/null 2>&1; then
-        print_success "Appium服务器正在运行"
-        print_info "状态URL: $APPIUM_URL/status"
-        
-        # 显示进程信息
-        local pids=$(pgrep -f "appium.*server\|appium.*--base-path")
-        if [ -n "$pids" ]; then
-            print_info "Appium进程ID: $pids"
-        fi
-        
-        # 显示端口信息
-        local port_info=$(lsof -i :4723 2>/dev/null)
-        if [ -n "$port_info" ]; then
-            print_info "端口占用情况:"
-            echo "$port_info"
-        fi
+        print_success "Appium服务器运行正常"
+        echo "服务器状态:"
+        curl -s "$APPIUM_URL/status" | python3 -m json.tool 2>/dev/null || curl -s "$APPIUM_URL/status"
+        return 0
     else
         print_warning "Appium服务器未运行"
-        
-        # 检查是否有残留进程
-        local pids=$(pgrep -f "appium.*server\|appium.*--base-path")
-        if [ -n "$pids" ]; then
-            print_warning "发现残留的Appium进程: $pids"
-        fi
+        return 1
     fi
 }
 
 # 启动Appium服务器
 start_appium() {
     print_info "启动Appium服务器..."
-    
-    # 检查Appium安装
-    check_appium_installed
     
     cd "$PROJECT_ROOT" || {
         print_error "无法切换到项目根目录: $PROJECT_ROOT"
@@ -197,10 +178,8 @@ main() {
             echo "  status  - 检查Appium服务器状态"
             echo "  logs    - 显示Appium日志"
             echo ""
-            echo "示例:"
-            echo "  $0 start    # 启动Appium"
-            echo "  $0 status   # 检查状态"
-            echo "  $0 logs     # 查看日志"
+            echo "默认命令: status"
+            exit 1
             ;;
     esac
 }

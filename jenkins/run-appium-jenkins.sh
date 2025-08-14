@@ -27,11 +27,22 @@ if curl -s "$APPIUM_URL/status" > /dev/null 2>&1; then
     echo "✅ Appium服务器已在运行"
 else
     # 停止现有进程
+    pkill -f "appium.*server" 2>/dev/null
     pkill -f "appium.*--base-path" 2>/dev/null
     sleep 2
     
-    # 启动新进程
-    nohup appium --base-path /wd/hub --log-level debug > appium.log 2>&1 &
+    # 检查Appium版本并选择启动命令
+    APPIUM_VERSION=$(appium --version)
+    echo "检测到Appium版本: $APPIUM_VERSION"
+    
+    if [[ $APPIUM_VERSION == 2.* ]]; then
+        echo "使用Appium 2.x启动命令"
+        nohup appium server --base-path /wd/hub --port 4723 --log-level debug > appium.log 2>&1 &
+    else
+        echo "使用Appium 1.x启动命令"
+        nohup appium --base-path /wd/hub --log-level debug > appium.log 2>&1 &
+    fi
+    
     appium_pid=$!
     
     # 等待启动
