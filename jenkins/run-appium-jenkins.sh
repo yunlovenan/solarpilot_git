@@ -97,7 +97,8 @@ fi
 
 # 安装核心依赖
 echo "安装核心依赖..."
-pip install pytest==8.4.1 selenium appium-python-client requests allure-pytest -i https://mirrors.aliyun.com/pypi/simple/
+# 使用Jenkins专用的requirements文件，确保版本兼容性
+pip install -r jenkins/requirements-jenkins.txt -i https://mirrors.aliyun.com/pypi/simple/
 
 # 运行测试（不使用Allure避免兼容性问题）
 echo "运行测试..."
